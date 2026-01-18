@@ -12,3 +12,8 @@ CAKTO_CHECKOUT_URL=https://pay.cakto.com.br/seu-produto
 
 # URL pública da aplicação (para redirecionamentos)
 NEXT_PUBLIC_URL=http://localhost:3000
+
+NEXT_PUBLIC_SUPABASE_URL=https://jrnvehptmgmoonafbacg.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpybnZlaHB0bWdtb29uYWZiYWNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NjQ3NTAsImV4cCI6MjA4MTE0MDc1MH0.6ey1zxd5RzwmEGfG8D1sIgs-nLbPD-esarExKRpaPmI
+CAKTO_CHECKOUT_URL=https://pay.cakto.com.br/jc9vpbz_715904
+
