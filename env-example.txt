@@ -1,0 +1,14 @@
+# RENOMEIE ESTE ARQUIVO PARA .env.local E ADICIONE SUAS CHAVES
+# Update these with your Supabase credentials from https://supabase.com/dashboard/project/_/settings/api
+NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+
+# Cakto - Pagamentos Recorrentes
+# Obtenha em: https://app.cakto.com.br/dashboard/cakto-api
+CAKTO_CLIENT_ID=seu_client_id
+CAKTO_CLIENT_SECRET=seu_client_secret
+CAKTO_CHECKOUT_URL=https://pay.cakto.com.br/seu-produto
+
+# URL pública da aplicação (para redirecionamentos)
+NEXT_PUBLIC_URL=http://localhost:3000

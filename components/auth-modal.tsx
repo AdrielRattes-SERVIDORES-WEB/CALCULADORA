@@ -26,34 +26,29 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
   const handleSignUp = async () => {
     setLoading(true)
     setError("")
-    const supabase = getSupabaseClient()
-
     try {
+      const supabase = getSupabaseClient()
       const redirectUrl = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/callback`
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-        },
-      })
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("A conexão expirou. Verifique se o antivírus está bloqueando o acesso.")), 15000)
+      )
+
+      const { data, error } = (await Promise.race([
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+          },
+        }),
+        timeoutPromise,
+      ])) as any
 
       if (error) throw error
 
       if (data.user) {
-        // Criar registro na tabela users
-        const { error: userError } = await supabase.from("users").insert([
-          {
-            id: data.user.id,
-            email: data.user.email,
-            subscription_status: "free",
-            free_calculations_used: 0,
-            free_calculations_reset_date: new Date().toISOString().split("T")[0],
-          },
-        ])
-
-        if (userError) throw userError
+        // Trigger handle_new_user will create the user record automatically
 
         setMessage("Conta criada com sucesso! Verifique seu email para confirmar.")
         setTimeout(() => {
@@ -62,7 +57,12 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
         }, 2000)
       }
     } catch (error: any) {
-      setError(error.message)
+      console.error("Signup error:", error)
+      if (error.message?.includes("Database error saving new user")) {
+        setError("Erro: O banco de dados recusou o cadastro. Execute o script de correção 'Trigger' no Supabase.")
+      } else {
+        setError(error.message || "Erro ao criar conta")
+      }
     } finally {
       setLoading(false)
     }
@@ -71,20 +71,42 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
   const handleSignIn = async () => {
     setLoading(true)
     setError("")
-    const supabase = getSupabaseClient()
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const supabase = getSupabaseClient()
+
+      // Create a specific timeout promise that rejects
+      const timeoutPromise = new Promise((_, reject) => {
+        const id = setTimeout(() => {
+          clearTimeout(id)
+          reject(new Error("TIMEOUT_ERROR"))
+        }, 30000) // 30 seconds timeout
+      })
+
+      // Wrap the sign in call
+      const signInPromise = supabase.auth.signInWithPassword({
         email,
         password,
       })
+
+      const result = await Promise.race([signInPromise, timeoutPromise]) as any
+      const { data, error } = result
 
       if (error) throw error
 
       onSuccess()
       onOpenChange(false)
     } catch (error: any) {
-      setError(error.message)
+      if (error.message === "TIMEOUT_ERROR" || error.message?.includes("expirou")) {
+        console.warn("Login timeout prevented infinite loading.")
+        setError("A conexão com o servidor (Supabase) está bloqueada ou muito lenta. Tente desativar temporariamente o 'Web Shield' do seu antivírus.")
+      } else if (error.message?.includes("Database error saving new user")) {
+        console.error("Trigger fail:", error)
+        setError("Erro interno no banco de dados. O 'Gatilho de Criação' falhou. Por favor, execute o script de correção no Supabase.")
+      } else {
+        console.error("Signin error:", error)
+        setError(error.message || "Erro ao entrar")
+      }
     } finally {
       setLoading(false)
     }
@@ -99,7 +121,7 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
             Acesso à Calculadora
           </DialogTitle>
           <DialogDescription>
-            Você atingiu o limite de 3 cálculos gratuitos. Faça login ou crie uma conta para continuar.
+            Você atingiu o limite de 3 cálculos gratuitos. Crie uma conta grátis para desbloquear as calculadoras do Mercado Livre e Amazon, e ganhe mais 5 cálculos diários.
           </DialogDescription>
         </DialogHeader>
 

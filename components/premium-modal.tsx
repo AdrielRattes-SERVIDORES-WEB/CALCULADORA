@@ -18,38 +18,53 @@ export function PremiumModal({ open, onOpenChange, userEmail }: PremiumModalProp
     setLoading(true)
 
     try {
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: userEmail,
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("A conexão expirou. Verifique se o antivírus está bloqueando o acesso.")), 15000)
+      )
+
+      const response = (await Promise.race([
+        fetch("/api/create-checkout-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: userEmail,
+          }),
         }),
-      })
+        timeoutPromise,
+      ])) as Response
 
-      const { url } = await response.json()
+      const data = await response.json()
 
-      if (url) {
-        window.location.href = url
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao processar pagamento")
       }
-    } catch (error) {
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error("URL de pagamento não recebida")
+      }
+    } catch (error: any) {
       console.error("Erro ao criar sessão de checkout:", error)
+      alert(error.message || "Erro ao iniciar pagamento. Verifique o console para mais detalhes.")
     } finally {
       setLoading(false)
     }
   }
 
+
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" hideCloseButton>
+    <Dialog open={open} onOpenChange={() => { }}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-center">
             <Crown className="h-6 w-6 text-yellow-500" />
             Upgrade para Premium
           </DialogTitle>
           <DialogDescription className="text-center">
-            Você atingiu o limite de cálculos gratuitos. Assine o plano Premium para continuar usando a calculadora.
+            Você atingiu o limite de cálculos gratuitos. Assine o plano Premium para cálculos ilimitados em todos os marketplaces.
           </DialogDescription>
         </DialogHeader>
 
@@ -93,7 +108,7 @@ export function PremiumModal({ open, onOpenChange, userEmail }: PremiumModalProp
           </Button>
 
           <p className="text-xs text-center text-gray-500">
-            Pagamento seguro processado pelo Stripe. Cancele a qualquer momento.
+            Pagamento seguro processado pela Cakto. Cancele a qualquer momento.
           </p>
         </div>
       </DialogContent>

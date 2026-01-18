@@ -1,36 +1,33 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Crown } from "lucide-react"
+import { CheckCircle, Crown, Loader2 } from "lucide-react"
 
 export default function SuccessPage() {
-  const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const sessionId = searchParams.get("session_id")
+    // Aguardar processamento do webhook da Cakto
+    // O webhook é enviado assim que o pagamento é aprovado
+    const timer = setTimeout(() => {
+      setLoading(false)
+    }, 3000)
 
-    if (sessionId) {
-      // Aguardar processamento do webhook
-      setTimeout(() => {
-        setLoading(false)
-      }, 3000)
-    } else {
-      router.push("/")
-    }
-  }, [searchParams, router])
+    return () => clearTimeout(timer)
+  }, [])
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="text-center p-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-            <p>Processando seu pagamento...</p>
+            <Loader2 className="h-12 w-12 animate-spin text-orange-600 mx-auto mb-4" />
+            <p className="text-gray-600">Processando seu pagamento...</p>
+            <p className="text-sm text-gray-500 mt-2">Aguarde enquanto confirmamos sua assinatura.</p>
           </CardContent>
         </Card>
       </div>
