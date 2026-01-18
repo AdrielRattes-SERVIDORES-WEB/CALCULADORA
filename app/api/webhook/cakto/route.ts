@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer } from "@/lib/supabase-server"
 import type { CaktoWebhookPayload } from "@/lib/cakto"
+import { getCaktoWebhookSecret, validateCaktoWebhook } from "@/lib/cakto"
 
 export const dynamic = "force-dynamic"
 
@@ -11,6 +12,17 @@ export const dynamic = "force-dynamic"
  */
 export async function POST(request: NextRequest) {
     try {
+        // Validar assinatura do webhook (se configurado)
+        const webhookSecret = getCaktoWebhookSecret()
+        const signature = request.headers.get("x-cakto-signature") ||
+            request.headers.get("x-webhook-secret") ||
+            request.headers.get("authorization")
+
+        if (webhookSecret && !validateCaktoWebhook(signature, webhookSecret)) {
+            console.error("Webhook com assinatura inválida rejeitado")
+            return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 })
+        }
+
         const payload: CaktoWebhookPayload = await request.json()
 
         console.log("Webhook Cakto recebido:", payload.event, payload.customer?.email)

@@ -9,6 +9,7 @@ SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 CAKTO_CLIENT_ID=seu_client_id
 CAKTO_CLIENT_SECRET=seu_client_secret
 CAKTO_CHECKOUT_URL=https://pay.cakto.com.br/seu-produto
+CAKTO_WEBHOOK_SECRET=sua_chave_secreta_do_webhook
 
 # URL pública da aplicação (para redirecionamentos)
 NEXT_PUBLIC_URL=http://localhost:3000

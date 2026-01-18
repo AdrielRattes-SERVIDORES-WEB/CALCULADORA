@@ -124,6 +124,38 @@ export type CaktoWebhookEvent =
     | "boleto_generated"
     | "checkout_abandoned"
 
+/**
+ * Obtém o webhook secret para validação
+ */
+export function getCaktoWebhookSecret(): string {
+    const secret = process.env.CAKTO_WEBHOOK_SECRET
+    if (!secret) {
+        console.warn("CAKTO_WEBHOOK_SECRET não configurado - webhooks não serão validados")
+        return ""
+    }
+    return secret
+}
+
+/**
+ * Valida a assinatura do webhook da Cakto
+ * Retorna true se válido ou se não há secret configurado (modo permissivo)
+ */
+export function validateCaktoWebhook(signature: string | null, secret: string): boolean {
+    if (!secret) {
+        // Modo permissivo se não há secret configurado
+        return true
+    }
+
+    if (!signature) {
+        console.warn("Webhook recebido sem assinatura")
+        return false
+    }
+
+    // Cakto pode usar diferentes métodos de validação
+    // Verificar se a assinatura corresponde ao secret
+    return signature === secret
+}
+
 export interface CaktoWebhookPayload {
     event: CaktoWebhookEvent
     customer: {
