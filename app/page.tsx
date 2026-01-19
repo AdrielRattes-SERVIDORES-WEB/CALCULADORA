@@ -46,8 +46,8 @@ export default function ShopeeCalculator() {
   const [amazonLogisticFee, setAmazonLogisticFee] = useState('')
 
 
-  // Helper to wrap DB calls with timeout
-  const safeDbCall = async (promise: Promise<any>, timeoutMs = 5000) => {
+  // Helper to wrap DB calls with timeout - OTIMIZADO para 3s
+  const safeDbCall = async (promise: Promise<any>, timeoutMs = 3000) => {
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("DB_TIMEOUT")), timeoutMs)
     )
@@ -78,25 +78,23 @@ export default function ShopeeCalculator() {
       try {
         setConnectionError(false)
 
-        // 1. Auth Check with Timeout (Increased to 15s for slow connections)
-        console.log("Starting checkUser...")
-        const { result: authResult, error: authTimeout } = await safeDbCall(supabase.auth.getUser(), 15000)
+        // OTIMIZAÇÃO: Carregar dados de guest imediatamente para UX rápida
+        loadGuestData()
+        setIsLoading(false) // Mostrar UI imediatamente
 
-        console.log("Auth Result:", authResult)
+        // 1. Auth Check com timeout curto (3s) - roda em background
+        console.log("Starting checkUser...")
+        const { result: authResult, error: authTimeout } = await safeDbCall(supabase.auth.getUser(), 3000)
 
         if (authTimeout || !authResult?.data?.user) {
-          if (authTimeout) console.warn("Auth check timed out")
-          console.log("No user found in checkUser (or timeout).")
+          if (authTimeout) console.warn("Auth check timed out - continuing as guest")
 
           // Check for invalid refresh token to clear stale sessions
           if (authResult?.error?.message?.includes("Invalid Refresh Token") || authResult?.error?.message?.includes("Refresh Token Not Found")) {
             console.warn("Stale session detected, clearing...")
-            await supabase.auth.signOut()
+            supabase.auth.signOut() // Non-blocking
           }
-
-          loadGuestData()
-          setIsLoading(false)
-          return
+          return // Já está como guest
         }
 
         const authUser = authResult.data.user
@@ -160,9 +158,7 @@ export default function ShopeeCalculator() {
         }
       } catch (error) {
         console.error("Critical checkUser error:", error)
-        loadGuestData()
-      } finally {
-        setIsLoading(false)
+        // Já está como guest, não precisa fazer nada
       }
     }
 
