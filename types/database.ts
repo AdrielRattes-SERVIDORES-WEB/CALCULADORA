@@ -8,6 +8,12 @@ export interface User {
   subscription_end_date?: string
   free_calculations_used: number
   free_calculations_reset_date: string
+  // Campos para setup de senha pós-compra
+  setup_token?: string
+  setup_token_expires?: string
+  // Dados do cliente vindos da Cakto
+  cakto_customer_name?: string
+  cakto_customer_phone?: string
 }
 
 export interface Calculation {

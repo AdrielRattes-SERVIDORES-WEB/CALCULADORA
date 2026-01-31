@@ -9,10 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calculator, Crown, History, Download, Settings, ExternalLink, LogOut, User, AlertTriangle, Truck, ShoppingBag, Loader2 } from "lucide-react"
+import { Calculator, Crown, History, Download, Settings, ExternalLink, LogOut, User, AlertTriangle, Truck, ShoppingBag, Loader2, Lock } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
-import { AuthModal } from "@/components/auth-modal"
-import { PremiumModal } from "@/components/premium-modal"
 import { MarketplaceCard } from "@/components/marketplace-card"
 import type { User as UserType, Calculation, MLAdLevel, MLShippingMode, MLCalculationResult, AmazonLogisticMode, AmazonCalculationResult } from "@/types/database"
 
@@ -28,11 +26,12 @@ export default function ShopeeCalculator() {
 
   const [user, setUser] = useState<UserType | null>(null)
   const [calculations, setCalculations] = useState<Calculation[]>([])
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [showPremiumModal, setShowPremiumModal] = useState(false)
-  const [guestUsage, setGuestUsage] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [connectionError, setConnectionError] = useState(false)
+  const [accessDenied, setAccessDenied] = useState(false)
+
+  // Email premium fixo (seu email)
+  const PREMIUM_EMAIL = "adrielrattes@gmail.com"
 
   // ML-specific states
   const [mlAdLevel, setMlAdLevel] = useState<MLAdLevel>('premium')
@@ -62,39 +61,32 @@ export default function ShopeeCalculator() {
   useEffect(() => {
     const supabase = getSupabaseClient()
 
-    const checkDailyReset = (userData: UserType) => {
-      if (userData.subscription_status === "premium") return userData
-
-      const today = new Date().toISOString().split("T")[0]
-      const resetDate = userData.free_calculations_reset_date?.split("T")[0]
-
-      if (resetDate !== today) {
-        return { ...userData, free_calculations_used: 0, free_calculations_reset_date: new Date().toISOString() }
-      }
-      return userData
+    // Verifica se usuário tem permissão (premium ou email autorizado)
+    const hasAccess = (userData: UserType) => {
+      return userData.subscription_status === "premium" || userData.email === PREMIUM_EMAIL
     }
 
     const checkUser = async () => {
       try {
         setConnectionError(false)
 
-        // OTIMIZAÇÃO: Carregar dados de guest imediatamente para UX rápida
-        loadGuestData()
-        setIsLoading(false) // Mostrar UI imediatamente
-
-        // 1. Auth Check com timeout curto (3s) - roda em background
+        // 1. Auth Check com timeout curto (3s)
         console.log("Starting checkUser...")
         const { result: authResult, error: authTimeout } = await safeDbCall(supabase.auth.getUser(), 3000)
 
         if (authTimeout || !authResult?.data?.user) {
-          if (authTimeout) console.warn("Auth check timed out - continuing as guest")
+          if (authTimeout) console.warn("Auth check timed out")
 
-          // Check for invalid refresh token to clear stale sessions
+          // Limpar sessões inválidas
           if (authResult?.error?.message?.includes("Invalid Refresh Token") || authResult?.error?.message?.includes("Refresh Token Not Found")) {
             console.warn("Stale session detected, clearing...")
-            supabase.auth.signOut() // Non-blocking
+            supabase.auth.signOut()
           }
-          return // Já está como guest
+
+          // Sistema fechado - sem usuário = sem acesso
+          setAccessDenied(true)
+          setIsLoading(false)
+          return
         }
 
         const authUser = authResult.data.user
@@ -105,11 +97,9 @@ export default function ShopeeCalculator() {
           supabase.from("users").select("*").eq("id", authUser.id).single()
         )
 
-        // Handle DB Connection failure explicitly
         if (dbError) {
           console.error("DB connection failed:", dbError)
           setConnectionError(true)
-          loadGuestData() // Fallback to guest so app works somewhat
           setIsLoading(false)
           return
         }
@@ -117,62 +107,45 @@ export default function ShopeeCalculator() {
         const userData = dbData?.data
 
         if (userData) {
-          const checkedUser = checkDailyReset(userData)
-
-          if (checkedUser.free_calculations_used !== userData.free_calculations_used) {
-            // Background update - allow fail
-            safeDbCall(
-              supabase.from("users").update({
-                free_calculations_used: 0,
-                free_calculations_reset_date: new Date().toISOString(),
-              }).eq("id", userData.id)
-            )
+          // Verificar se tem acesso premium
+          if (!hasAccess(userData)) {
+            console.warn("User exists but not premium:", userData.email)
+            setAccessDenied(true)
+            setIsLoading(false)
+            return
           }
-          setUser(checkedUser)
-          loadCalculations(checkedUser.id)
-        } else {
-          // 3. Self-healing Upsert with Timeout
-          console.log("Attempting self-healing upsert...")
-          const { result: newUserResult, error: upsertError } = await safeDbCall(
-            supabase.from("users").upsert([{
-              id: authUser.id,
-              email: authUser.email,
-              subscription_status: "free",
-              free_calculations_used: 0,
-              free_calculations_reset_date: new Date().toISOString().split("T")[0],
-            }]).select().single()
-          )
 
-          if (newUserResult?.data) {
-            console.log("Self-healing success:", newUserResult.data)
-            setUser(newUserResult.data)
-            loadCalculations(newUserResult.data.id)
+          setUser(userData)
+          loadCalculations(userData.id)
+        } else {
+          // Usuário auth existe mas não no DB - verificar se é o email premium
+          if (authUser.email === PREMIUM_EMAIL) {
+            // Criar usuário premium para o admin
+            const { result: newUserResult } = await safeDbCall(
+              supabase.from("users").upsert([{
+                id: authUser.id,
+                email: authUser.email,
+                subscription_status: "premium",
+                free_calculations_used: 0,
+                free_calculations_reset_date: new Date().toISOString().split("T")[0],
+              }]).select().single()
+            )
+
+            if (newUserResult?.data) {
+              setUser(newUserResult.data)
+              loadCalculations(newUserResult.data.id)
+            }
           } else {
-            console.error("Failed to create user (Self-Healing):", upsertError || newUserResult?.error)
-            // DO NOT fail to guest silently if we know we are auth'd but DB failed.
-            // Show specific error state.
-            setConnectionError(true)
-            // We can keep them as guest but with the banner visible
-            loadGuestData()
+            // Não autorizado
+            setAccessDenied(true)
           }
         }
+
+        setIsLoading(false)
       } catch (error) {
         console.error("Critical checkUser error:", error)
-        // Já está como guest, não precisa fazer nada
-      }
-    }
-
-    const loadGuestData = () => {
-      const savedUsage = localStorage.getItem("shopee-calc-guest-usage")
-      const savedDate = localStorage.getItem("shopee-calc-guest-date")
-      const today = new Date().toISOString().split("T")[0]
-
-      if (savedDate !== today) {
-        localStorage.setItem("shopee-calc-guest-usage", "0")
-        localStorage.setItem("shopee-calc-guest-date", today)
-        setGuestUsage(0)
-      } else {
-        setGuestUsage(savedUsage ? Number.parseInt(savedUsage) : 0)
+        setAccessDenied(true)
+        setIsLoading(false)
       }
     }
 
@@ -180,55 +153,46 @@ export default function ShopeeCalculator() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
       if (event === "SIGNED_IN" && session?.user) {
-        setShowAuthModal(false) // Close modal if login succeeds (even if delayed)
-
-        // Small delay to allow trigger to complete
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        // Re-use safe DB check logic
+        // Re-verificar acesso após login
         const { result: dbData } = await safeDbCall(
           supabase.from("users").select("*").eq("id", session.user.id).single()
         )
 
         if (dbData?.data) {
-          const checkedUser = checkDailyReset(dbData.data)
-          // If reset needed and not done yet (race condition check)
-          if (checkedUser.free_calculations_used !== dbData.data.free_calculations_used) {
-            safeDbCall(
-              supabase
-                .from("users")
-                .update({
-                  free_calculations_used: 0,
-                  free_calculations_reset_date: new Date().toISOString(),
-                })
-                .eq("id", dbData.data.id)
-            )
+          if (hasAccess(dbData.data)) {
+            setUser(dbData.data)
+            setAccessDenied(false)
+            loadCalculations(dbData.data.id)
+          } else {
+            setAccessDenied(true)
           }
-          setUser(checkedUser)
-          loadCalculations(checkedUser.id)
-        } else {
-          // Retry creation
+        } else if (session.user.email === PREMIUM_EMAIL) {
+          // Criar usuário premium admin
           const { result: newUserResult } = await safeDbCall(
             supabase.from("users").upsert([{
               id: session.user.id,
               email: session.user.email,
-              subscription_status: "free",
+              subscription_status: "premium",
               free_calculations_used: 0,
               free_calculations_reset_date: new Date().toISOString().split("T")[0],
             }]).select().single()
           )
           if (newUserResult?.data) {
             setUser(newUserResult.data)
+            setAccessDenied(false)
             loadCalculations(newUserResult.data.id)
           }
+        } else {
+          setAccessDenied(true)
         }
       } else if (event === "SIGNED_OUT") {
         setUser(null)
         setCalculations([])
         setResultML(null)
         setResultAmazon(null)
+        setAccessDenied(true)
       }
     })
 
@@ -588,7 +552,6 @@ export default function ShopeeCalculator() {
 
 
   const calculatePrice = async () => {
-
     const cost = Number.parseFloat(costPrice)
     const marginPercent = Number.parseFloat(margin)
     const qty = Number.parseInt(quantity) || 1
@@ -596,91 +559,58 @@ export default function ShopeeCalculator() {
 
     if (!cost || !marginPercent) return
 
-    // Limit Checks
+    // Sistema fechado - apenas usuário premium pode calcular
     if (!user) {
-      if (guestUsage >= 3) {
-        setShowAuthModal(true)
-        return
-      }
-    } else if (user.subscription_status === "free" && user.free_calculations_used >= 5) {
-      setShowPremiumModal(true)
       return
     }
 
-    // Shopee Calculation (Always runs)
+    // Shopee Calculation
     const shopeeResult = calculateGeneric(cost, marginPercent, qty, hasFreeship, 'shopee')
     setResultShopee(shopeeResult)
 
-    // Clean inputs for other marketplaces if Guest
-    if (!user) {
-      setResultML(null)
-      setResultAmazon(null)
-    } else {
-      // Logged in user gets all calc
-      const mlResult = calculateMLPrice(
-        cost,
-        marginPercent,
-        mlAdLevel,
-        mlShippingMode,
-        mlCustomTax ? parseFloat(mlCustomTax) : undefined,
-        mlShippingMode === 'flex' ? parseFloat(motoboyFee) : undefined
-      )
-      setResultML(mlResult)
+    // Todos os marketplaces disponíveis para usuário premium
+    const mlResult = calculateMLPrice(
+      cost,
+      marginPercent,
+      mlAdLevel,
+      mlShippingMode,
+      mlCustomTax ? parseFloat(mlCustomTax) : undefined,
+      mlShippingMode === 'flex' ? parseFloat(motoboyFee) : undefined
+    )
+    setResultML(mlResult)
 
-      // Amazon with Smart DBA
-      const amazonResult = calculateAmazonPrice(
-        cost,
-        marginPercent,
-        amazonLogisticMode,
-        amazonTaxRate ? parseFloat(amazonTaxRate) : undefined,
-        amazonLogisticFee ? parseFloat(amazonLogisticFee) : undefined
-      )
-      setResultAmazon(amazonResult)
-    }
+    // Amazon with Smart DBA
+    const amazonResult = calculateAmazonPrice(
+      cost,
+      marginPercent,
+      amazonLogisticMode,
+      amazonTaxRate ? parseFloat(amazonTaxRate) : undefined,
+      amazonLogisticFee ? parseFloat(amazonLogisticFee) : undefined
+    )
+    setResultAmazon(amazonResult)
 
-    // Usage Tracking
+    // Salvar cálculo no histórico
     const supabase = getSupabaseClient()
 
-    if (user) {
-      // Save Shopee calculation only for history (for now)
-      if (!shopeeResult.error) {
-        const { data: newCalculation } = await supabase
-          .from("calculations")
-          .insert({
-            user_id: user.id,
-            cost_price: cost,
-            margin_percent: marginPercent,
-            quantity: qty,
-            free_shipping: hasFreeship,
-            selling_price: shopeeResult.sellingPrice,
-            commission: shopeeResult.taxasVariaveisReais + shopeeResult.taxaFixa,
-            profit: shopeeResult.lucroLiquidoReais,
-          })
-          .select()
-          .single()
+    if (!shopeeResult.error) {
+      const { data: newCalculation } = await supabase
+        .from("calculations")
+        .insert({
+          user_id: user.id,
+          cost_price: cost,
+          margin_percent: marginPercent,
+          quantity: qty,
+          free_shipping: hasFreeship,
+          selling_price: shopeeResult.sellingPrice,
+          commission: shopeeResult.taxasVariaveisReais + shopeeResult.taxaFixa,
+          profit: shopeeResult.lucroLiquidoReais,
+        })
+        .select()
+        .single()
 
-        if (newCalculation) {
-          setCalculations([newCalculation, ...calculations])
-        }
+      if (newCalculation) {
+        setCalculations([newCalculation, ...calculations])
       }
-
-      if (user.subscription_status === "free") {
-        const newCount = user.free_calculations_used + 1
-
-        // Optimistic update
-        setUser({ ...user, free_calculations_used: newCount })
-
-        const { error: updateError } = await supabase.from("users").update({ free_calculations_used: newCount }).eq("id", user.id)
-
-        if (updateError) {
-          console.error("Erro ao atualizar contador:", updateError)
-          // Rollback if needed, but for limits usually we keep the stricter local state
-        }
-      }
-    } else {
-      const newUsage = guestUsage + 1
-      setGuestUsage(newUsage)
-      localStorage.setItem("shopee-calc-guest-usage", newUsage.toString())
     }
   }
 
@@ -694,12 +624,6 @@ export default function ShopeeCalculator() {
     alert("Funcionalidade de exportação em desenvolvimento!")
   }
 
-  const getRemainingCalculations = () => {
-    if (!user) return `${3 - guestUsage} (sem login)`
-    if (user.subscription_status === "premium") return "Ilimitado"
-    return `${5 - user.free_calculations_used} hoje`
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100">
       <div className="container mx-auto px-4 py-8">
@@ -709,6 +633,37 @@ export default function ShopeeCalculator() {
               <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
               <p className="text-gray-500">Carregando...</p>
             </div>
+          </div>
+        ) : accessDenied ? (
+          <div className="flex h-[80vh] items-center justify-center">
+            <Card className="max-w-md mx-auto text-center">
+              <CardHeader>
+                <div className="flex justify-center mb-4">
+                  <Lock className="h-12 w-12 text-orange-600" />
+                </div>
+                <CardTitle className="text-2xl">Acesso Exclusivo</CardTitle>
+                <CardDescription>
+                  Esta calculadora é exclusiva para assinantes
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">
+                  Para ter acesso à calculadora completa de Shopee, Mercado Livre e Amazon, você precisa ser um assinante premium.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    className="bg-orange-600 hover:bg-orange-700 w-full"
+                    onClick={() => window.location.href = process.env.NEXT_PUBLIC_CAKTO_URL || 'https://pay.cakto.com.br/DAR7YWr'}
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Assinar Agora
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Já é assinante? <a href="/login" className="text-orange-600 underline">Faça login</a>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <>
@@ -742,31 +697,20 @@ export default function ShopeeCalculator() {
               </p>
 
               <div className="flex items-center justify-center gap-4 mt-4">
-                {user ? (
+                {user && (
                   <div className="flex items-center gap-4">
                     <Badge variant="outline" className="text-orange-600 border-orange-600">
                       <User className="h-3 w-3 mr-1" />
                       {user.email}
                     </Badge>
-                    {user.subscription_status === "free" && (
-                      <Badge variant="outline" className="text-orange-600 border-orange-600">
-                        Cálculos restantes: {getRemainingCalculations()}
-                      </Badge>
-                    )}
-                    {user.subscription_status === "premium" && (
-                      <Badge className="bg-yellow-500 text-white">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Premium
-                      </Badge>
-                    )}
+                    <Badge className="bg-yellow-500 text-white">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Premium
+                    </Badge>
                     <Button variant="ghost" size="sm" onClick={handleSignOut}>
                       <LogOut className="h-4 w-4" />
                     </Button>
                   </div>
-                ) : (
-                  <Badge variant="outline" className="text-orange-600 border-orange-600">
-                    Versão Gratuita: {getRemainingCalculations()} cálculos restantes hoje
-                  </Badge>
                 )}
               </div>
             </div>
@@ -985,58 +929,9 @@ export default function ShopeeCalculator() {
               {/* Results Section - Takes up 8 columns */}
               <div className="lg:col-span-8 space-y-6">
 
-                {/* If Logged In: Grid of 3 */}
-                {user ? (
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1">
-                      {resultShopee && (
-                        <MarketplaceCard
-                          title="Shopee"
-                          icon={<ShoppingBag className="h-5 w-5" />}
-                          colorClass="text-orange-600"
-                          result={resultShopee}
-                        />
-                      )}
-                      {!resultShopee && (
-                        <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-8 text-gray-400">
-                          Shopee
-                        </div>
-                      )}
-                    </div>
-                    <div className="md:col-span-1">
-                      {resultML && (
-                        <MarketplaceCard
-                          title="Mercado Livre"
-                          icon={<Truck className="h-5 w-5" />}
-                          colorClass="text-yellow-600"
-                          result={resultML}
-                        />
-                      )}
-                      {!resultML && (
-                        <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-8 text-gray-400">
-                          Mercado Livre
-                        </div>
-                      )}
-                    </div>
-                    <div className="md:col-span-1">
-                      {resultAmazon && (
-                        <MarketplaceCard
-                          title="Amazon"
-                          icon={<ShoppingBag className="h-5 w-5" />}
-                          colorClass="text-blue-600"
-                          result={resultAmazon}
-                        />
-                      )}
-                      {!resultAmazon && (
-                        <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-8 text-gray-400">
-                          Amazon
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  /* If Guest: Only Shopee + Call to Action */
-                  <div className="space-y-6">
+                {/* Premium user: Grid of 3 marketplaces */}
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1">
                     {resultShopee && (
                       <MarketplaceCard
                         title="Shopee"
@@ -1045,59 +940,43 @@ export default function ShopeeCalculator() {
                         result={resultShopee}
                       />
                     )}
-
                     {!resultShopee && (
-                      <div className="text-center p-12 bg-white rounded-lg shadow-sm border">
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Faça seu cálculo</h3>
-                        <p className="text-gray-500">Preencha os dados ao lado para ver o resultado.</p>
+                      <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-8 text-gray-400">
+                        Shopee
                       </div>
                     )}
-
-                    <Card className="border-blue-100 bg-blue-50">
-                      <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div>
-                          <h3 className="font-semibold text-blue-900 mb-1">Quer vender em mais lugares?</h3>
-                          <p className="text-sm text-blue-700">Faça login grátis para desbloquear calculadora do <strong>Mercado Livre</strong> e <strong>Amazon</strong>.</p>
-                        </div>
-                        <Button onClick={() => setShowAuthModal(true)} variant="default" className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
-                          Criar Conta Grátis
-                        </Button>
-                      </CardContent>
-                    </Card>
                   </div>
-                )}
-
-                {/* Premium CTA if needed */}
-                {(!user || user.subscription_status === "free") && (
-                  <div className="pt-4 border-t">
-                    <p className="text-center text-xs text-gray-400 mb-2">Publicidade</p>
-                    <Card className="border-orange-200 bg-gradient-to-r from-white to-orange-50">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Crown className="h-5 w-5 text-yellow-500" />
-                              <h3 className="font-bold text-lg text-gray-900">Seja Premium</h3>
-                            </div>
-                            <p className="text-gray-600 max-w-lg">
-                              Tenha cálculos ilimitados para Shopee, Mercado Livre e Amazon. Histórico completo e exportação de dados.
-                            </p>
-                          </div>
-                          <div className="text-center min-w-[120px]">
-                            <p className="text-2xl font-bold text-orange-600">R$ 9,90</p>
-                            <p className="text-xs text-gray-500">/mês</p>
-                          </div>
-                          <Button
-                            onClick={() => (user ? setShowPremiumModal(true) : setShowAuthModal(true))}
-                            className="bg-orange-600 hover:bg-orange-700 px-8"
-                          >
-                            Assinar Agora
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  <div className="md:col-span-1">
+                    {resultML && (
+                      <MarketplaceCard
+                        title="Mercado Livre"
+                        icon={<Truck className="h-5 w-5" />}
+                        colorClass="text-yellow-600"
+                        result={resultML}
+                      />
+                    )}
+                    {!resultML && (
+                      <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-8 text-gray-400">
+                        Mercado Livre
+                      </div>
+                    )}
                   </div>
-                )}
+                  <div className="md:col-span-1">
+                    {resultAmazon && (
+                      <MarketplaceCard
+                        title="Amazon"
+                        icon={<ShoppingBag className="h-5 w-5" />}
+                        colorClass="text-blue-600"
+                        result={resultAmazon}
+                      />
+                    )}
+                    {!resultAmazon && (
+                      <div className="h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center p-8 text-gray-400">
+                        Amazon
+                      </div>
+                    )}
+                  </div>
+                </div>
 
               </div>
             </div>
@@ -1206,17 +1085,6 @@ export default function ShopeeCalculator() {
                 Essa é uma estimativa com base na política oficial dos marketplaces e pode variar conforme categoria ou promoções.
               </p>
             </footer>
-
-            <AuthModal
-              open={showAuthModal}
-              onOpenChange={setShowAuthModal}
-              onSuccess={() => {
-                setShowAuthModal(false)
-                window.location.reload()
-              }}
-            />
-
-            {user && <PremiumModal open={showPremiumModal} onOpenChange={setShowPremiumModal} userEmail={user.email} />}
           </>
         )}
       </div>
