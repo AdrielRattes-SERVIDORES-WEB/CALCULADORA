@@ -11,7 +11,7 @@ import {
 export default function LandingPage() {
     const [openFaq, setOpenFaq] = useState<number | null>(0)
 
-    const checkoutUrl = process.env.NEXT_PUBLIC_CAKTO_URL || "https://pay.cakto.com.br/DAR7YWr"
+    const checkoutUrl = process.env.NEXT_PUBLIC_CAKTO_URL || "https://pay.cakto.com.br/jc9vpbz_715904"
 
     const faqs = [
         {
@@ -96,7 +96,7 @@ export default function LandingPage() {
 
                             <Button
                                 size="lg"
-                                onClick={() => document.getElementById('oferta')?.scrollIntoView({ behavior: 'smooth' })}
+                                onClick={() => window.location.href = checkoutUrl}
                                 className="bg-[#42B395] hover:bg-[#3a9f84] text-white text-lg px-8 py-6 rounded-full mb-8"
                             >
                                 Garantir minha calculadora agora!
@@ -237,7 +237,7 @@ export default function LandingPage() {
                     <div className="text-center mt-12">
                         <Button
                             size="lg"
-                            onClick={() => document.getElementById('oferta')?.scrollIntoView({ behavior: 'smooth' })}
+                            onClick={() => window.location.href = checkoutUrl}
                             className="bg-[#42B395] hover:bg-[#3a9f84] text-white text-lg px-8 py-6 rounded-full"
                         >
                             Quero minha calculadora agora!
@@ -302,11 +302,11 @@ export default function LandingPage() {
                             <div className="border-t border-dashed border-gray-300 my-8"></div>
 
                             <p className="text-gray-500 text-lg mb-2">
-                                de <span className="line-through font-bold">R$ 90,00</span> por
+                                de <span className="line-through font-bold">R$ 29,99</span> por
                             </p>
 
                             <div className="mb-8">
-                                <span className="text-5xl md:text-6xl font-extrabold text-[#044A05]">R$ 29,99</span>
+                                <span className="text-5xl md:text-6xl font-extrabold text-[#044A05]">R$ 9,90</span>
                             </div>
 
                             <Button
@@ -407,7 +407,7 @@ export default function LandingPage() {
                     <div className="text-center mt-12">
                         <Button
                             size="lg"
-                            onClick={() => document.getElementById('oferta')?.scrollIntoView({ behavior: 'smooth' })}
+                            onClick={() => window.location.href = checkoutUrl}
                             className="bg-[#42B395] hover:bg-[#3a9f84] text-white text-lg px-8 py-6 rounded-full"
                         >
                             Garantir minha calculadora agora!

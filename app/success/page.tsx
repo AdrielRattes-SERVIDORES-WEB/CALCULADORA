@@ -1,139 +1,261 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Crown, Loader2, ArrowRight } from "lucide-react"
+import { Loader2, CheckCircle, Calculator, Crown } from "lucide-react"
 import { getSupabaseClient } from "@/lib/supabase"
+import Link from "next/link"
 
-export default function SuccessPage() {
+function SuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [loading, setLoading] = useState(true)
-  const [setupUrl, setSetupUrl] = useState<string | null>(null)
-  const [isExistingUser, setIsExistingUser] = useState(false)
+  const [status, setStatus] = useState<'loading' | 'setup-needed' | 'logged-in' | 'error'>('loading')
+  const [message, setMessage] = useState("")
+  const [setupUrl, setSetupUrl] = useState("")
 
-  // O email pode vir da URL do checkout ou ser recuperado do localStorage
-  const emailFromUrl = searchParams.get("email")
+  const email = searchParams.get("email")
+  const token = searchParams.get("token")
 
   useEffect(() => {
-    const checkUserStatus = async () => {
-      // Aguardar processamento do webhook da Cakto (3 segundos)
-      await new Promise(resolve => setTimeout(resolve, 3000))
+    const processSuccess = async () => {
+      // Se tem token e email, fazer auto-login
+      if (token && email) {
+        try {
+          const supabase = getSupabaseClient()
 
-      const email = emailFromUrl || localStorage.getItem("checkout_email")
+          // Tentar auto-login
+          const response = await fetch('/api/auth/auto-login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, token }),
+          })
 
-      if (!email) {
-        setLoading(false)
-        return
-      }
+          if (response.ok) {
+            const data = await response.json()
 
-      try {
-        const supabase = getSupabaseClient()
+            // Estabelecer sessão no cliente
+            if (data.session) {
+              await supabase.auth.setSession({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+              })
 
-        // Verificar se o usuário já tem auth (usuário existente)
-        const { data: authData } = await supabase.auth.getUser()
+              setStatus('logged-in')
+              setMessage("Pagamento confirmado! Redirecionando para a calculadora...")
 
-        if (authData?.user) {
-          // Usuário já logado - é um upgrade
-          setIsExistingUser(true)
-          setLoading(false)
+              // Redirecionar para calculadora após 2 segundos
+              setTimeout(() => router.push("/"), 2000)
+              return
+            }
+          } else {
+            // Se auto-login falhar, redirecionar para setup de senha
+            setSetupUrl(`/setup-password?token=${token}&email=${encodeURIComponent(email)}`)
+            setStatus('setup-needed')
+            setMessage("Pagamento confirmado! Agora crie sua senha para acessar.")
+            return
+          }
+        } catch (error) {
+          console.error("Erro no auto-login:", error)
+          setSetupUrl(`/setup-password?token=${token}&email=${encodeURIComponent(email)}`)
+          setStatus('setup-needed')
+          setMessage("Pagamento confirmado! Agora crie sua senha para acessar.")
           return
         }
-
-        // Buscar dados do usuário para ver se precisa criar senha
-        const { data: userData } = await supabase
-          .from("users")
-          .select("setup_token, email")
-          .eq("email", email)
-          .single()
-
-        if (userData?.setup_token) {
-          // Novo usuário - precisa criar senha
-          const url = `/setup-password?token=${userData.setup_token}&email=${encodeURIComponent(email)}`
-          setSetupUrl(url)
-        } else if (userData) {
-          // Usuário existe mas sem token - pode já ter configurado senha
-          setIsExistingUser(true)
-        }
-      } catch (error) {
-        console.error("Erro ao verificar status:", error)
       }
 
-      setLoading(false)
+      // Se só tem email, verificar se usuário já existe e pode fazer login
+      if (email) {
+        try {
+          const supabase = getSupabaseClient()
+
+          // Verificar se usuário já está logado
+          const { data: authData } = await supabase.auth.getUser()
+
+          if (authData?.user) {
+            setStatus('logged-in')
+            setMessage("Pagamento confirmado! Você já está logado.")
+            // Redirecionar para calculadora após 2 segundos
+            setTimeout(() => router.push("/"), 2000)
+            return
+          }
+
+          // Verificar se usuário precisa criar senha
+          const { data: userData } = await supabase
+            .from("users")
+            .select("setup_token, setup_token_expires")
+            .eq("email", email)
+            .single()
+
+          if (userData?.setup_token) {
+            // Tentar auto-login com o token
+            const response = await fetch('/api/auth/auto-login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email, token: userData.setup_token }),
+            })
+
+            if (response.ok) {
+              const data = await response.json()
+
+              if (data.session) {
+                await supabase.auth.setSession({
+                  access_token: data.session.access_token,
+                  refresh_token: data.session.refresh_token,
+                })
+
+                setStatus('logged-in')
+                setMessage("Pagamento confirmado! Redirecionando para a calculadora...")
+                setTimeout(() => router.push("/"), 2000)
+                return
+              }
+            }
+
+            // Se auto-login falhar, oferecer setup de senha
+            setSetupUrl(`/setup-password?token=${userData.setup_token}&email=${encodeURIComponent(email)}`)
+            setStatus('setup-needed')
+            setMessage("Pagamento confirmado! Crie sua senha para acessar.")
+            return
+          }
+
+          // Usuário já tem conta, redirecionar para login
+          setStatus('setup-needed')
+          setSetupUrl("/login")
+          setMessage("Pagamento confirmado! Faça login para acessar.")
+
+        } catch (error) {
+          console.error("Erro ao processar sucesso:", error)
+          setStatus('setup-needed')
+          setSetupUrl("/login")
+          setMessage("Pagamento confirmado! Faça login para acessar sua conta.")
+        }
+      } else {
+        // Sem email, mostrar mensagem genérica
+        setStatus('setup-needed')
+        setSetupUrl("/login")
+        setMessage("Pagamento confirmado! Verifique seu email para os dados de acesso.")
+      }
     }
 
-    checkUserStatus()
-  }, [emailFromUrl])
+    processSuccess()
+  }, [email, token, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="text-center p-8">
-            <Loader2 className="h-12 w-12 animate-spin text-orange-600 mx-auto mb-4" />
-            <p className="text-gray-600">Processando seu pagamento...</p>
-            <p className="text-sm text-gray-500 mt-2">Aguarde enquanto confirmamos sua assinatura.</p>
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(180deg, #044A05 0%, #033303 100%)' }}>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-0 shadow-2xl">
+          <CardContent className="p-8 text-center">
+            {status === 'loading' && (
+              <>
+                <Loader2 className="h-16 w-16 text-[#42B395] mx-auto mb-6 animate-spin" />
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  Processando...
+                </h1>
+                <p className="text-gray-600">
+                  Aguarde enquanto confirmamos seu pagamento.
+                </p>
+              </>
+            )}
+
+            {status === 'logged-in' && (
+              <>
+                <div className="relative inline-block mb-6">
+                  <div className="w-20 h-20 bg-[#42B395] rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-10 w-10 text-white" />
+                  </div>
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  🎉 Pagamento Confirmado!
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  {message}
+                </p>
+                <p className="text-gray-500 text-sm">
+                  Redirecionando para a calculadora...
+                </p>
+              </>
+            )}
+
+            {status === 'setup-needed' && (
+              <>
+                <div className="relative inline-block mb-6">
+                  <div className="w-20 h-20 bg-[#42B395] rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-10 w-10 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                    <Crown className="h-5 w-5 text-yellow-800" />
+                  </div>
+                </div>
+
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  🎉 Pagamento Confirmado!
+                </h1>
+
+                <p className="text-gray-600 mb-6">
+                  {message}
+                </p>
+
+                <Button
+                  size="lg"
+                  onClick={() => router.push(setupUrl)}
+                  className="w-full bg-[#42B395] hover:bg-[#3a9f84] text-white text-lg py-6 rounded-full"
+                >
+                  {setupUrl.includes('setup-password') ? 'Criar minha senha' : 'Acessar minha conta'}
+                </Button>
+
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <p className="text-gray-500 text-sm">
+                    Seu acesso é <strong className="text-[#044A05]">vitalício</strong>!
+                  </p>
+                </div>
+              </>
+            )}
+
+            {status === 'error' && (
+              <>
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Calculator className="h-10 w-10 text-red-500" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  Ops! Algo deu errado
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  {message}
+                </p>
+                <Link
+                  href="/landing"
+                  className="text-[#42B395] hover:underline"
+                >
+                  Voltar para a página inicial
+                </Link>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
-    )
-  }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4">
-            <CheckCircle className="h-16 w-16 text-green-600" />
-          </div>
-          <CardTitle className="flex items-center justify-center gap-2">
-            <Crown className="h-6 w-6 text-yellow-500" />
-            {setupUrl ? "Pagamento Confirmado!" : "Bem-vindo ao Premium!"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
-          <p className="text-gray-600">
-            {setupUrl
-              ? "Seu pagamento foi aprovado! Agora configure sua senha para acessar."
-              : "Sua assinatura foi ativada com sucesso! Agora você tem acesso a todos os recursos premium."
-            }
-          </p>
-
-          <ul className="text-sm text-left space-y-2">
-            <li className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              Cálculos ilimitados
-            </li>
-            <li className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              Histórico completo
-            </li>
-            <li className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              Exportação de dados
-            </li>
-          </ul>
-
-          {setupUrl ? (
-            <Button
-              onClick={() => router.push(setupUrl)}
-              className="w-full bg-orange-600 hover:bg-orange-700"
-            >
-              Criar Senha e Acessar
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button
-              onClick={() => router.push("/")}
-              className="w-full bg-orange-600 hover:bg-orange-700"
-            >
-              {isExistingUser ? "Voltar à Calculadora" : "Começar a usar"}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <footer className="py-6 px-4 text-center">
+        <p className="text-white/50 text-sm">
+          © 2025 Lucre 360 - Todos os direitos reservados
+        </p>
+      </footer>
     </div>
+  )
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #044A05 0%, #033303 100%)' }}>
+        <Loader2 className="h-12 w-12 text-white animate-spin" />
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   )
 }
