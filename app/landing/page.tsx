@@ -296,8 +296,13 @@ export default function LandingPage() {
 
                             <div className="border-t-2 border-dashed border-gray-300 my-8"></div>
 
+<<<<<<< HEAD
                             <p className="text-gray-500 text-xl mb-2">
                                 de <span className="line-through font-bold">R$ 29,99</span> por apenas
+=======
+                            <p className="text-gray-500 text-lg mb-2">
+                                de <span className="line-through font-bold">R$ 9,90</span> por
+>>>>>>> 2a5bd3d916ab4d34684ce191fb777aa040c7f9a0
                             </p>
 
                             <div className="mb-8">
