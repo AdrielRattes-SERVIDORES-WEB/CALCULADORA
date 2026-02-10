@@ -160,6 +160,68 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* Pricing Section - MOVED TO TOP FOR URGENCY */}
+            <section id="oferta" className="py-16 md:py-20 px-4 bg-gradient-to-br from-green-50 to-emerald-50">
+                <div className="container mx-auto max-w-xl">
+                    <Card className="border-4 border-[#10B981] shadow-2xl overflow-hidden">
+                        <CardContent className="p-8 md:p-12 text-center bg-white">
+                            <div className="bg-[#10B981] text-white py-2 px-6 rounded-full inline-block mb-6 font-bold animate-pulse">
+                                🔥 OFERTA ESPECIAL
+                            </div>
+
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">
+                                Pare de Perder Dinheiro HOJE!
+                            </h2>
+
+                            <ul className="text-left space-y-4 mb-8 max-w-md mx-auto">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                                    <span className="text-gray-700 font-medium">Acesso imediato por WhatsApp e e-mail</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                                    <span className="text-gray-700 font-medium">Funciona em computador e celular</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                                    <span className="text-gray-700 font-medium">Shopee + Mercado Livre + Amazon</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
+                                    <span className="text-gray-700 font-medium">Atualizações automáticas das taxas</span>
+                                </li>
+                            </ul>
+
+                            <div className="border-t-2 border-dashed border-gray-300 my-8"></div>
+
+                            <p className="text-gray-500 text-xl mb-2">
+                                de <span className="line-through font-bold">R$ 29,99</span> por apenas
+                            </p>
+
+                            <div className="mb-8">
+                                <span className="text-6xl md:text-7xl font-extrabold text-[#10B981]">R$ 9,90</span>
+                                <p className="text-gray-600 font-bold mt-2 text-lg">Pagamento único</p>
+                            </div>
+
+                            <Button
+                                size="lg"
+                                onClick={() => window.location.href = checkoutUrl}
+                                className="cta-pulse w-full bg-[#10B981] hover:bg-[#059669] text-white text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-6"
+                            >
+                                SIM! Quero Minha Calculadora Agora 🚀
+                            </Button>
+
+                            <div className="flex justify-center gap-4 mt-6">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-8 opacity-60" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="Mastercard" className="h-8 opacity-60" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-8 opacity-60" />
+                            </div>
+                            <p className="text-gray-500 text-sm mt-4">🔒 Pagamento 100% seguro</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
+
             {/* Problems Section */}
             <section className="py-16 md:py-20 px-4 bg-white">
                 <div className="container mx-auto max-w-6xl">
@@ -314,67 +376,6 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Pricing Section */}
-            <section id="oferta" className="py-16 md:py-20 px-4 bg-gradient-to-br from-orange-50 to-red-50">
-                <div className="container mx-auto max-w-xl">
-                    <Card className="border-4 border-[#FF6B35] shadow-2xl overflow-hidden">
-                        <CardContent className="p-8 md:p-12 text-center bg-white">
-                            <div className="bg-[#FF6B35] text-white py-2 px-6 rounded-full inline-block mb-6 font-bold">
-                                🔥 OFERTA ESPECIAL
-                            </div>
-
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">
-                                Pare de Perder Dinheiro HOJE!
-                            </h2>
-
-                            <ul className="text-left space-y-4 mb-8 max-w-md mx-auto">
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                                    <span className="text-gray-700 font-medium">Acesso imediato por WhatsApp e e-mail</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                                    <span className="text-gray-700 font-medium">Funciona em computador e celular</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                                    <span className="text-gray-700 font-medium">Shopee + Mercado Livre + Amazon</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="text-green-500 flex-shrink-0 mt-1" size={24} />
-                                    <span className="text-gray-700 font-medium">Atualizações automáticas das taxas</span>
-                                </li>
-                            </ul>
-
-                            <div className="border-t-2 border-dashed border-gray-300 my-8"></div>
-
-                            <p className="text-gray-500 text-xl mb-2">
-                                de <span className="line-through font-bold">R$ 29,99</span> por apenas
-                            </p>
-
-                            <div className="mb-8">
-                                <span className="text-6xl md:text-7xl font-extrabold text-[#10B981]">R$ 9,90</span>
-                                <p className="text-gray-600 font-bold mt-2 text-lg">Pagamento único</p>
-                            </div>
-
-                            <Button
-                                size="lg"
-                                onClick={() => window.location.href = checkoutUrl}
-                                className="cta-pulse w-full bg-[#10B981] hover:bg-[#059669] text-white text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-6"
-                            >
-                                SIM! Quero Minha Calculadora Agora 🚀
-                            </Button>
-
-                            <div className="flex justify-center gap-4 mt-6">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-8 opacity-60" />
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="Mastercard" className="h-8 opacity-60" />
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-8 opacity-60" />
-                            </div>
-                            <p className="text-gray-500 text-sm mt-4">🔒 Pagamento 100% seguro</p>
-                        </CardContent>
-                    </Card>
-                </div>
-            </section>
 
             {/* FAQ Section */}
             <section className="py-16 md:py-20 px-4 bg-white">
