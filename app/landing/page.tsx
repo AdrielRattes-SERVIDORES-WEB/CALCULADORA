@@ -178,6 +178,18 @@ export default function LandingPage() {
                             </p>
                         </div>
                     </div>
+
+                    {/* CTA after Problems */}
+                    <div className="text-center mt-12">
+                        <Button
+                            size="lg"
+                            onClick={() => window.location.href = checkoutUrl}
+                            className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                        >
+                            Quero Resolver Isso Agora! 🚀
+                        </Button>
+                        <p className="text-gray-600 mt-4 font-semibold">Apenas R$ 9,90 • Pagamento único</p>
+                    </div>
                 </div>
             </section>
 
@@ -238,6 +250,18 @@ export default function LandingPage() {
                             ></iframe>
                         </div>
                     </div>
+
+                    {/* CTA after Video */}
+                    <div className="text-center mt-12">
+                        <Button
+                            size="lg"
+                            onClick={() => window.location.href = checkoutUrl}
+                            className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                        >
+                            Sim! Quero Minha Calculadora Agora 🎯
+                        </Button>
+                        <p className="text-gray-600 mt-4 font-semibold">✓ Acesso imediato • ✓ Sem mensalidade</p>
+                    </div>
                 </div>
             </section>
 
@@ -258,6 +282,19 @@ export default function LandingPage() {
                                 />
                             </div>
                         ))}
+                    </div>
+
+                    {/* CTA after Testimonials */}
+                    <div className="text-center mt-12">
+                        <p className="text-gray-700 mb-4 text-lg font-semibold">Junte-se a mais de 5.800 vendedores satisfeitos!</p>
+                        <Button
+                            size="lg"
+                            onClick={() => window.location.href = checkoutUrl}
+                            className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                        >
+                            Garantir Minha Calculadora por R$ 9,90 💰
+                        </Button>
+                        <p className="text-gray-600 mt-4 font-semibold">🔒 Pagamento 100% seguro</p>
                     </div>
                 </div>
             </section>
