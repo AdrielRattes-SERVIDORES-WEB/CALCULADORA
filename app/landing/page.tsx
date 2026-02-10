@@ -60,6 +60,21 @@ export default function LandingPage() {
 
     return (
         <div className="min-h-screen bg-white">
+            <style jsx>{`
+                @keyframes strong-pulse {
+                    0%, 100% {
+                        transform: scale(1);
+                        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+                    }
+                    50% {
+                        transform: scale(1.05);
+                        box-shadow: 0 0 20px 10px rgba(16, 185, 129, 0.4);
+                    }
+                }
+                .cta-pulse {
+                    animation: strong-pulse 1.5s ease-in-out infinite;
+                }
+            `}</style>
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-orange-50">
                 <div className="container mx-auto px-4 py-12 md:py-20">
@@ -100,7 +115,7 @@ export default function LandingPage() {
                             <Button
                                 size="lg"
                                 onClick={() => window.location.href = checkoutUrl}
-                                className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse mb-8"
+                                className="cta-pulse bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-8"
                             >
                                 Quero Calcular Meu Lucro Agora! 🚀
                             </Button>
@@ -184,7 +199,7 @@ export default function LandingPage() {
                         <Button
                             size="lg"
                             onClick={() => window.location.href = checkoutUrl}
-                            className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse"
+                            className="cta-pulse bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
                         >
                             Quero Resolver Isso Agora! 🚀
                         </Button>
@@ -256,7 +271,7 @@ export default function LandingPage() {
                         <Button
                             size="lg"
                             onClick={() => window.location.href = checkoutUrl}
-                            className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse"
+                            className="cta-pulse bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
                         >
                             Sim! Quero Minha Calculadora Agora 🎯
                         </Button>
@@ -290,7 +305,7 @@ export default function LandingPage() {
                         <Button
                             size="lg"
                             onClick={() => window.location.href = checkoutUrl}
-                            className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse"
+                            className="cta-pulse bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
                         >
                             Garantir Minha Calculadora por R$ 9,90 💰
                         </Button>
@@ -345,7 +360,7 @@ export default function LandingPage() {
                             <Button
                                 size="lg"
                                 onClick={() => window.location.href = checkoutUrl}
-                                className="w-full bg-[#10B981] hover:bg-[#059669] text-white text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse mb-6"
+                                className="cta-pulse w-full bg-[#10B981] hover:bg-[#059669] text-white text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-6"
                             >
                                 SIM! Quero Minha Calculadora Agora 🚀
                             </Button>
@@ -406,7 +421,7 @@ export default function LandingPage() {
                     <Button
                         size="lg"
                         onClick={() => window.location.href = checkoutUrl}
-                        className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-12 py-7 rounded-full shadow-2xl hover:shadow-3xl transition-all animate-pulse"
+                        className="cta-pulse bg-[#10B981] hover:bg-[#059669] text-white text-xl px-12 py-7 rounded-full shadow-2xl hover:shadow-3xl transition-all"
                     >
                         Garantir Minha Calculadora por R$ 9,90 🚀
                     </Button>
