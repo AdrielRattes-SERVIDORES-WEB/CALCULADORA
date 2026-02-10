@@ -100,7 +100,7 @@ export default function LandingPage() {
                             <Button
                                 size="lg"
                                 onClick={() => window.location.href = checkoutUrl}
-                                className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 mb-8"
+                                className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse mb-8"
                             >
                                 Quero Calcular Meu Lucro Agora! 🚀
                             </Button>
@@ -184,11 +184,11 @@ export default function LandingPage() {
                         <Button
                             size="lg"
                             onClick={() => window.location.href = checkoutUrl}
-                            className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                            className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse"
                         >
                             Quero Resolver Isso Agora! 🚀
                         </Button>
-                        <p className="text-gray-600 mt-4 font-semibold">Apenas R$ 9,90 • Pagamento único</p>
+                        <p className="text-gray-600 mt-4 font-semibold">✓ Acesso imediato por apenas R$ 9,90</p>
                     </div>
                 </div>
             </section>
@@ -256,11 +256,11 @@ export default function LandingPage() {
                         <Button
                             size="lg"
                             onClick={() => window.location.href = checkoutUrl}
-                            className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                            className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse"
                         >
                             Sim! Quero Minha Calculadora Agora 🎯
                         </Button>
-                        <p className="text-gray-600 mt-4 font-semibold">✓ Acesso imediato • ✓ Sem mensalidade</p>
+                        <p className="text-gray-600 mt-4 font-semibold">✓ Acesso imediato • ✓ Pagamento único de R$ 9,90</p>
                     </div>
                 </div>
             </section>
@@ -290,7 +290,7 @@ export default function LandingPage() {
                         <Button
                             size="lg"
                             onClick={() => window.location.href = checkoutUrl}
-                            className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                            className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-10 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse"
                         >
                             Garantir Minha Calculadora por R$ 9,90 💰
                         </Button>
@@ -338,14 +338,14 @@ export default function LandingPage() {
                             </p>
 
                             <div className="mb-8">
-                                <span className="text-6xl md:text-7xl font-extrabold text-[#FF6B35]">R$ 9,90</span>
-                                <p className="text-gray-600 font-bold mt-2 text-lg">Pagamento único • Sem mensalidade</p>
+                                <span className="text-6xl md:text-7xl font-extrabold text-[#10B981]">R$ 9,90</span>
+                                <p className="text-gray-600 font-bold mt-2 text-lg">Pagamento único</p>
                             </div>
 
                             <Button
                                 size="lg"
                                 onClick={() => window.location.href = checkoutUrl}
-                                className="w-full bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 mb-6"
+                                className="w-full bg-[#10B981] hover:bg-[#059669] text-white text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all animate-pulse mb-6"
                             >
                                 SIM! Quero Minha Calculadora Agora 🚀
                             </Button>
@@ -372,13 +372,13 @@ export default function LandingPage() {
                         {faqs.map((faq, index) => (
                             <div
                                 key={index}
-                                className={`bg-white rounded-xl border-2 cursor-pointer transition-all shadow-md ${openFaq === index ? 'border-[#FF6B35] shadow-lg' : 'border-gray-200'}`}
+                                className={`bg-white rounded-xl border-2 cursor-pointer transition-all shadow-md ${openFaq === index ? 'border-[#10B981] shadow-lg' : 'border-gray-200'}`}
                                 onClick={() => setOpenFaq(openFaq === index ? null : index)}
                             >
                                 <div className="p-6 flex items-center justify-between">
                                     <h3 className="text-lg font-bold text-gray-900 pr-4">{faq.question}</h3>
                                     {openFaq === index ? (
-                                        <ChevronUp className="h-6 w-6 text-[#FF6B35] flex-shrink-0" />
+                                        <ChevronUp className="h-6 w-6 text-[#10B981] flex-shrink-0" />
                                     ) : (
                                         <ChevronDown className="h-6 w-6 text-gray-400 flex-shrink-0" />
                                     )}
@@ -406,7 +406,7 @@ export default function LandingPage() {
                     <Button
                         size="lg"
                         onClick={() => window.location.href = checkoutUrl}
-                        className="bg-[#FF6B35] hover:bg-[#ff5722] text-white text-xl px-12 py-7 rounded-full shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
+                        className="bg-[#10B981] hover:bg-[#059669] text-white text-xl px-12 py-7 rounded-full shadow-2xl hover:shadow-3xl transition-all animate-pulse"
                     >
                         Garantir Minha Calculadora por R$ 9,90 🚀
                     </Button>
